@@ -17,7 +17,7 @@ CALL crear_reserva(1, 1, '2025-06-20', '2025-06-25', '2025-05-27');
 SELECT * FROM Reservas;
 
 -- PRUEBA: CANCELAR Y LIBERAR HABITACIÓN
-DELETE FROM Reservas WHERE reserva_id = 2;
+DELETE FROM Reservas WHERE reserva_id = 2 ;
 
 -- VERIFICAR DISPONIBILIDAD RESTAURADA
 SELECT * from habitaciones

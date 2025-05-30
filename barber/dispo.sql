@@ -1,22 +1,33 @@
 -- Function
 USE `barberia`;
-DROP function IF EXISTS `verificar_disponibilidad`;
+DROP function IF EXISTS `calcular_hora_fin`;
 
 DELIMITER $$
 USE `barberia`$$
-CREATE FUNCTION verificar_disponibilidad(empleado_id INT, fecha DATETIME)
-RETURNS BOOLEAN
+CREATE FUNCTION calcular_hora_fin(p_cita_id INT)
+RETURNS TIME
 DETERMINISTIC
 BEGIN
-  DECLARE disponibilidad BOOLEAN;
-  SET disponibilidad = NOT EXISTS (
-    SELECT 1 FROM Citas
-    WHERE empleados_id = empleado_id AND Fecha_Hora_Cita = fecha
+  DECLARE hora_inicio TIME;
+  DECLARE total_duracion INT; -- en segundos
+
+  -- Obtener la hora de inicio de la cita
+  SELECT TIME(Fecha_Hora_Cita) INTO hora_inicio
+  FROM Citas WHERE cita_id = p_cita_id;
+
+  -- Calcular la duración total de todos los servicios asociados a la cita
+  SELECT SUM(TIME_TO_SEC(DuracionEstimada)) INTO total_duracion
+  FROM Servicios
+  WHERE servicios_id IN (
+    SELECT servicio_id FROM Servicios_Citas WHERE cita_id = p_cita_id
   );
-  RETURN disponibilidad;
+
+  -- Retornar hora final sumando duración
+  RETURN ADDTIME(hora_inicio, SEC_TO_TIME(total_duracion));
 END;$$
 
 DELIMITER ;
+
 
 -- Procedure
 
@@ -45,35 +56,31 @@ DELIMITER ;
 
 -- Trigger
 
-
-DROP TRIGGER IF EXISTS `barberia`.`citas_AFTER_INSERT`;
+DROP TRIGGER IF EXISTS `barberia`.`verificar_disponibilidad`;
 
 DELIMITER $$
 USE `barberia`$$
-CREATE TABLE Log_Citas (
-  log_id INT AUTO_INCREMENT PRIMARY KEY,
-  cita_id INT,
-  mensaje TEXT,
-  fecha_log DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-DELIMITER //
-CREATE TRIGGER after_insert_cita
-AFTER INSERT ON Citas
+CREATE TRIGGER verificar_disponibilidad
+BEFORE INSERT ON Citas
 FOR EACH ROW
 BEGIN
-  INSERT INTO Log_Citas (cita_id, mensaje)
-  VALUES (NEW.cita_id, CONCAT('Cita agendada para el cliente ', NEW.cliente_id));
-END;
-//
-DELIMITER ;$$
-DELIMITER ;}
+  DECLARE conteo INT;
 
-SELECT verificar_disponibilidad(2, '2024-06-01 12:00:00') AS disponible;
-CALL agendar_cita(2, 2, '2024-05-27 11:00:00', 'Agendada');
-CALL agendar_cita(1, 2, '2024-06-01 12:00:00', 'Agendada');
-SELECT * FROM Citas;
-SELECT * FROM Log_Citas;
+  SELECT COUNT(*) INTO conteo
+  FROM Citas
+  WHERE empleados_id = NEW.empleados_id
+    AND DATE(Fecha_Hora_Cita) = DATE(NEW.Fecha_Hora_Cita)
+    AND TIME(Fecha_Hora_Cita) = TIME(NEW.Fecha_Hora_Cita);
+
+  IF conteo > 0 THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'El barbero ya tiene una cita en ese horario.';
+  END IF;
+END;$$
+DELIMITER ;
+
+SELECT calcular_hora_fin(3) AS hora_fin;
+
 
 
 

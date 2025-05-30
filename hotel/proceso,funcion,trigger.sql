@@ -65,5 +65,5 @@ END;
 //
 DELIMITER ;
 
-CALL crear_reserva(2, 2, '2025-06-02', '2025-06-04', '2025-06-01');  -- Solo 1 día de anticipación
+CALL crear_reserva(1, 2, '2025-06-02', '2025-06-04', '2025-06-01');  -- Solo 1 día de anticipación
 SELECT calcular_descuento('2025-06-20', '2025-05-27', 400000.00);

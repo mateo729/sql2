@@ -63,4 +63,4 @@ BEGIN
 END;$$
 DELIMITER ;
 
-
+call registrar_pago(2,40000.00);

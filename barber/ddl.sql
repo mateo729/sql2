@@ -77,3 +77,6 @@ ADD CONSTRAINT fk_id_cita FOREIGN KEY (id_cita) REFERENCES Citas(cita_id);
 ALTER TABLE Servicios_Citas
 ADD CONSTRAINT fk_servicio_id FOREIGN KEY (servicio_id) REFERENCES Servicios(servicios_id),
 ADD CONSTRAINT fk_cita_id FOREIGN KEY (cita_id) REFERENCES Citas(cita_id);
+
+alter table pagos DROP INDEX id_cita;
+show indexes from pagos;
